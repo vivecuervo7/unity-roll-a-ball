@@ -5,21 +5,14 @@ using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour
 {
-    private Rigidbody body;
+    [SerializeField] private Rigidbody body;
+    [SerializeField] private Rigidbody head;
     private int count;
     private int countToWin;
     [SerializeField] Text countText;
     [SerializeField] Text winText;
-    //[SerializeField] Transform head;
-    [SerializeField] private float speed = 1f;
-
-    [Tooltip("Scale torque by this value")]
-    public float TorqueScale = 0.3f;
-
-    private void Awake()
-    {
-        body = GetComponent<Rigidbody>();
-    }
+    [SerializeField] private float speed;
+    [Range(0f, 0.4f)][SerializeField] private float headLeanAmount;
 
     private void Start()
     {
@@ -31,17 +24,27 @@ public class PlayerController : MonoBehaviour
 
     private void FixedUpdate()
     {
-        var movement = new Vector3(Input.GetAxis("Horizontal"), 0, Input.GetAxis("Vertical"));
-        body.AddForce(movement * speed);
+        // Clamp magnitude to use normalized vector where an axis exceeds maxLength. Preferred over
+        // using an explicitly normalized vector as it would prevent partial movement with a joystick
+        var input = Vector3.ClampMagnitude(new Vector3(Input.GetAxis("Horizontal"), 0, Input.GetAxis("Vertical")), 1f);
 
-        if (body.velocity.magnitude > speed)
-        {
-            body.velocity = body.velocity.normalized * speed;
-        }
+        // Calculate speed factoring in mass, so changing mass won't alter the overall speed. Doing this in
+        // update over Start() so we can adjust speed throughout the game
+        body.AddForce(input * speed * body.mass);
 
-        // Lock head to body's position and rotation
-        //head.LookAt(transform);
-        //head.position = transform.position;
+        // Move BB-8's head to the correct position and apply rotation
+        head.transform.position = transform.position;
+        head.AddTorque(body.angularVelocity);
+
+        // Use a lower torque scale when travelling in a straight direction to allow for increased head rotation
+        var movement = Mathf.Abs(1f - Vector3.Dot(head.transform.forward, body.velocity.normalized));
+        var torqueScale = Mathf.Clamp(movement - headLeanAmount, 0.2f, 1f);
+        ApplyHeadRotation(head, torqueScale);
+
+        // Point BB-8's head in direction of movement
+        var angle = Vector3.Dot(head.transform.right, body.velocity.normalized) * (Mathf.Rad2Deg * Time.fixedDeltaTime * 20f);
+        var q = Quaternion.AngleAxis(angle, Vector3.forward);
+        head.rotation *= q;
     }
 
     private void OnTriggerEnter(Collider other)
@@ -60,5 +63,23 @@ public class PlayerController : MonoBehaviour
         {
             winText.gameObject.SetActive(true);
         }
+    }
+
+    void ApplyHeadRotation(Rigidbody head, float torqueScale)
+    {
+        var target = Vector3.up;
+        var current = head.transform.forward;
+        // Axis of rotation
+        var x = Vector3.Cross(current, target);
+        var theta = Mathf.Asin(x.magnitude);
+        // Change in angular velocity
+        var w = x.normalized * (theta / Time.fixedDeltaTime * torqueScale);
+        // Current rotation in world space
+        var q = head.rotation * head.inertiaTensorRotation;
+        // Transform to local space
+        w = Quaternion.Inverse(q) * w;
+        // Calculate torque and convert back to world space
+        var T = q * Vector3.Scale(head.inertiaTensor, w);
+        head.AddTorque(T, ForceMode.Force);
     }
 }
