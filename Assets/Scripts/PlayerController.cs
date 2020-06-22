@@ -7,20 +7,8 @@ public class PlayerController : MonoBehaviour
 {
     [SerializeField] private Rigidbody body;
     [SerializeField] private Rigidbody head;
-    private int count;
-    private int countToWin;
-    [SerializeField] Text countText;
-    [SerializeField] Text winText;
     [SerializeField] private float speed;
     [Range(0f, 0.4f)][SerializeField] private float headLeanAmount;
-
-    private void Start()
-    {
-        count = 0;
-        countToWin = GameObject.FindGameObjectsWithTag("Pickup").Length;
-        UpdateScore(count);
-        winText.gameObject.SetActive(false);
-    }
 
     private void FixedUpdate()
     {
@@ -45,24 +33,6 @@ public class PlayerController : MonoBehaviour
         var angle = Vector3.Dot(head.transform.right, body.velocity.normalized) * (Mathf.Rad2Deg * Time.fixedDeltaTime * 20f);
         var q = Quaternion.AngleAxis(angle, Vector3.forward);
         head.rotation *= q;
-    }
-
-    private void OnTriggerEnter(Collider other)
-    {
-        if (other.gameObject.CompareTag("Pickup"))
-        {
-            other.gameObject.SetActive(false);
-            UpdateScore(++count);
-        }
-    }
-
-    private void UpdateScore(int score)
-    {
-        countText.text = score.ToString();
-        if (score == countToWin)
-        {
-            winText.gameObject.SetActive(true);
-        }
     }
 
     void ApplyHeadRotation(Rigidbody head, float torqueScale)
