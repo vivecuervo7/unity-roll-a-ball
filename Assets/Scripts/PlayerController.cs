@@ -5,10 +5,24 @@ using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour
 {
+    private Respawner respawner;
     [SerializeField] private Rigidbody body;
     [SerializeField] private Rigidbody head;
     [SerializeField] private float speed;
     [Range(0f, 0.4f)][SerializeField] private float headLeanAmount;
+
+    private void Awake()
+    {
+        respawner = FindObjectOfType<Respawner>();
+    }
+
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.R)) {
+            respawner.RespawnPlayer();
+            Destroy(gameObject);
+        }
+    }
 
     private void FixedUpdate()
     {
@@ -35,7 +49,7 @@ public class PlayerController : MonoBehaviour
         head.rotation *= q;
     }
 
-    void ApplyHeadRotation(Rigidbody head, float torqueScale)
+    private void ApplyHeadRotation(Rigidbody head, float torqueScale)
     {
         var target = Vector3.up;
         var current = head.transform.forward;
