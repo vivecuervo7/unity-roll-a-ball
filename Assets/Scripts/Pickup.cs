@@ -11,7 +11,7 @@ public class Pickup : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.gameObject.CompareTag("Player"))
+        if (other.CompareTag("Player"))
         {
             SendMessageUpwards("PickupRetrieved", this);
             gameObject.SetActive(false);

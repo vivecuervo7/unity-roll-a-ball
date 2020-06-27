@@ -6,7 +6,7 @@ public class SpawnPoint : MonoBehaviour
 {
     private void OnTriggerEnter(Collider other)
     {
-        if (other.gameObject.CompareTag("Player"))
+        if (other.CompareTag("Player"))
         {
             SendMessageUpwards("SpawnPointActivated", this);
         }
